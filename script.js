@@ -75,6 +75,8 @@ function getCategoryLabel(cat) {
   if (cat === "electronics") return "📱 الإلكترونيات";
   if (cat === "perfumes") return "🌸 العطور";
   if (cat === "clothing") return "👕 الملابس";
+  if (cat === "pack-3-perfume") return "🎁 باك 3 عطر ومبخرة";
+  if (cat === "pack-5-perfume") return "🎁 باك 5 عطر ومبخرة";
   return cat || "-";
 }
 
