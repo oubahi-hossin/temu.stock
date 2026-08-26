@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>حساب ثمن المنتجات - لوحة التحكم</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="container">
+    <section class="hero">
+      <div class="hero-header">
+        <div>
+          <p class="eyebrow">لوحة الحساب وإدارة المخزون</p>
+          <h1>لوحة حساب ثمن المنتجات</h1>
+        </div>
+        <div class="save-status-container">
+          <span class="badge success-badge" id="save-status-badge">✅ تم حفظ جميع التغييرات</span>
+        </div>
+      </div>
+      <p class="subtitle">أضف المنتجات، حدّد سعر الشراء والبيع والكميات، وتتبع الأرباح وتكاليف التوصيل تلقائياً في الوقت الحقيقي.</p>
+    </section>
+
+    <!-- شبكة الإحصائيات المحسنة -->
+    <section class="stats-grid" aria-label="ملخص سريع للمخزون والأرباح">
+      <div class="stat-card">
+        <span>عدد المنتجات</span>
+        <strong id="stat-count">0</strong>
+      </div>
+      <div class="stat-card">
+        <span>إجمالي الكمية</span>
+        <strong id="stat-total-qty">0</strong>
+      </div>
+      <div class="stat-card">
+        <span>إجمالي المباع</span>
+        <strong id="stat-total-sold">0</strong>
+      </div>
+      <div class="stat-card">
+        <span>المخزون المتبقي</span>
+        <strong id="stat-remaining-stock">0</strong>
+      </div>
+      <div class="stat-card">
+        <span>إجمالي قيمة الشراء</span>
+        <strong id="stat-purchase-val">0.00</strong> <small class="currency-label">درهم</small>
+      </div>
+      <div class="stat-card">
+        <span>إجمالي المبيعات</span>
+        <strong id="stat-sales-val">0.00</strong> <small class="currency-label">درهم</small>
+      </div>
+      <div class="stat-card">
+        <span>تكاليف التوصيل</span>
+        <strong id="stat-delivery-cost">0.00</strong> <small class="currency-label">درهم</small>
+      </div>
+      <div class="stat-card highlight-card">
+        <span>صافي الأرباح</span>
+        <strong id="stat-profit">0.00</strong> <small class="currency-label">درهم</small>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="toolbar">
+        <button id="add-product-btn" class="primary-btn" type="button">➕ إضافة منتج</button>
+        <button id="save-btn" class="primary-btn save-btn-style" type="button">💾 حفظ التغييرات</button>
+        <button id="clear-all-btn" class="ghost-btn" type="button">🗑️ حذف الكل</button>
+        <button type="button" class="primary-btn" onclick="window.print()">🖨️ طباعة</button>
+        <a href="products.html" id="nav-saved-products" class="ghost-btn nav-link">📦 صفحة المنتجات المحفوظة</a>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>رمز SKU</th>
+              <th>اسم المنتج</th>
+              <th>التصنيف</th>
+              <th>سعر الشراء (درهم)</th>
+              <th>الكمية الأولية</th>
+              <th>سعر البيع (درهم)</th>
+              <th>الكمية المباعة</th>
+              <th>المخزون المتبقي</th>
+              <th>حالة التوصيل</th>
+              <th>سعر التوصيل (درهم)</th>
+              <th>إجمالي المبيعات (درهم)</th>
+              <th>تعديل</th>
+              <th>حذف</th>
+            </tr>
+          </thead>
+          <tbody id="product-table">
+            <!-- سيتم توليد الصفوف برمجياً -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- نافذة إضافة/تعديل منتج (Modal) -->
+  <div id="product-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-title">إضافة منتج جديد</h2>
+        <button type="button" class="close-modal-btn" id="close-modal-x">&times;</button>
+      </div>
+      <form id="product-form">
+        <input type="hidden" id="edit-index" value="" />
+        
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="prod-code">رمز SKU / الرمز <span class="required">*</span></label>
+            <input type="text" id="prod-code" required placeholder="مثال: SKU-1001" />
+          </div>
+          
+          <div class="form-group">
+            <label for="prod-name">اسم المنتج <span class="required">*</span></label>
+            <input type="text" id="prod-name" required placeholder="مثال: قميص قطني" />
+          </div>
+
+          <div class="form-group">
+            <label for="prod-category">تصنيف المنتج <span class="required">*</span></label>
+            <select id="prod-category" required>
+              <option value="" disabled selected>اختر التصنيف...</option>
+              <option value="electronics">📱 الإلكترونيات</option>
+              <option value="perfumes">🌸 العطور</option>
+              <option value="clothing">👕 الملابس</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="prod-purchase-price">سعر الشراء للوحدة (درهم) <span class="required">*</span></label>
+            <input type="number" id="prod-purchase-price" required min="0" step="0.01" placeholder="0.00" />
+          </div>
+          
+          <div class="form-group">
+            <label for="prod-initial-qty">الكمية الأولية في المخزون <span class="required">*</span></label>
+            <input type="number" id="prod-initial-qty" required min="0" step="1" placeholder="0" />
+          </div>
+          
+          <div class="form-group">
+            <label for="prod-selling-price">سعر البيع للوحدة (درهم) <span class="required">*</span></label>
+            <input type="number" id="prod-selling-price" required min="0" step="0.01" placeholder="0.00" />
+          </div>
+          
+          <div class="form-group">
+            <label for="prod-qty-sold">الكمية المباعة <span class="required">*</span></label>
+            <input type="number" id="prod-qty-sold" required min="0" step="1" value="0" placeholder="0" />
+          </div>
+          
+          <div class="form-group">
+            <label for="prod-delivery-status">حالة التوصيل</label>
+            <select id="prod-delivery-status">
+              <option value="inactive">بدون توصيل (بيع شخصي)</option>
+              <option value="active">مع توصيل (عبر شركة شحن)</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="prod-delivery-price">سعر التوصيل للوحدة (درهم)</label>
+            <input type="number" id="prod-delivery-price" min="0" step="0.01" value="0" placeholder="0.00" disabled />
+          </div>
+
+          <!-- معلومات تواريخ المنتج للمودال -->
+          <div class="form-group span-2 date-info-group hidden" id="date-info-container">
+            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--muted); background: rgba(141,115,74,0.06); padding: 8px 12px; border-radius: 8px; direction: rtl;">
+              <span>📅 تاريخ الإنشاء: <span id="info-created-at">-</span></span>
+              <span>🔄 آخر تحديث: <span id="info-updated-at">-</span></span>
+            </div>
+          </div>
+        </div>
+        
+        <div id="modal-error" class="error-message hidden"></div>
+        
+        <div class="modal-footer">
+          <button type="submit" class="primary-btn" id="submit-form-btn">حفظ المنتج</button>
+          <button type="button" class="ghost-btn close-modal-btn" id="close-modal-cancel">إلغاء</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- نافذة تأكيد الحذف -->
+  <div id="delete-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-content small-modal">
+      <div class="modal-header">
+        <h2>تأكيد الحذف</h2>
+      </div>
+      <div class="modal-body" style="margin: 16px 0;">
+        <p>هل أنت متأكد من حذف هذا المنتج؟</p>
+        <p class="warning-text">⚠️ ملاحظة: لن يتم الحذف نهائياً من الذاكرة حتى تضغط على زر "حفظ التغييرات".</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="confirm-delete-btn" class="danger-btn-style" style="border-radius: 999px;">حذف</button>
+        <button type="button" id="cancel-delete-btn" class="ghost-btn">إلغاء</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- نافذة التنبيه للتغييرات غير المحفوظة -->
+  <div id="unsaved-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-content small-modal">
+      <div class="modal-header">
+        <h2>تغييرات غير محفوظة</h2>
+      </div>
+      <div class="modal-body" style="margin: 16px 0;">
+        <p>لديك تغييرات غير محفوظة في لوحة الحساب. هل تريد المغادرة؟</p>
+      </div>
+      <div class="modal-footer vertical-buttons">
+        <button type="button" id="unsaved-save-leave-btn" class="primary-btn">💾 حفظ التغييرات والمغادرة</button>
+        <button type="button" id="unsaved-leave-btn" class="danger-btn-style" style="border-radius: 999px;">مغادرة دون حفظ</button>
+        <button type="button" id="unsaved-cancel-btn" class="ghost-btn">إلغاء والبقاء</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- حاوية إشعارات التوست -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="script.js" defer></script>
+</body>
+</html>
