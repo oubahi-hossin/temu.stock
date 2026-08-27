@@ -155,6 +155,9 @@
       <div class="toolbar" style="margin-top: 24px; display: flex; justify-content: center; gap: 12px;">
         <button id="clear-all" class="ghost-btn danger-hover" type="button">🗑️ حذف جميع المحفوظات</button>
         <button id="print-saved-btn" class="primary-btn" type="button" onclick="window.print()">🖨️ طباعة الجدول</button>
+        <button id="export-saved-btn" class="ghost-btn" type="button" style="background: rgba(141,115,74,0.1); color: var(--accent);">📤 تصدير البيانات</button>
+        <button id="import-saved-btn" class="ghost-btn" type="button" style="background: rgba(141,115,74,0.1); color: var(--accent);">📥 استيراد البيانات</button>
+        <input type="file" id="import-saved-file" accept=".json" style="display: none;" />
       </div>
     </section>
   </main>

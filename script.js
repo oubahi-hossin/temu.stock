@@ -595,6 +595,55 @@ function initCalculatorPage() {
     localStorage.removeItem("showSavedToast");
   }
 
+  // أزرار تصدير واستيراد البيانات
+  const exportBtn = document.getElementById("export-btn");
+  const importBtn = document.getElementById("import-btn");
+  const importFile = document.getElementById("import-file");
+
+  exportBtn?.addEventListener("click", () => {
+    const saved = getSavedProducts();
+    if (saved.length === 0) {
+      showToast("لا توجد منتجات لتصديرها", "error");
+      return;
+    }
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(saved, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `temu_stock_backup_${new Date().toISOString().slice(0,10)}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+    showToast("تم تصدير نسخة احتياطية بنجاح", "success");
+  });
+
+  importBtn?.addEventListener("click", () => {
+    importFile?.click();
+  });
+
+  importFile?.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      try {
+        const imported = JSON.parse(evt.target.result);
+        if (Array.isArray(imported)) {
+          saveSavedProducts(imported);
+          saveWorkingProducts(imported);
+          showToast("تم استيراد البيانات بنجاح", "success");
+          setTimeout(() => {
+            location.reload();
+          }, 1000);
+        } else {
+          showToast("الملف لا يحتوي على قائمة منتجات صالحة", "error");
+        }
+      } catch {
+        showToast("حدث خطأ أثناء قراءة ملف الاستيراد", "error");
+      }
+    };
+    reader.readAsText(file);
+  });
+
   render();
   return true;
 }
@@ -985,6 +1034,55 @@ function initSavedProductsPage() {
     showToast("تم حفظ المنتجات بنجاح", "success");
     localStorage.removeItem("showSavedToast");
   }
+
+  // أزرار تصدير واستيراد البيانات لصفحة المحفوظات
+  const exportSavedBtn = document.getElementById("export-saved-btn");
+  const importSavedBtn = document.getElementById("import-saved-btn");
+  const importSavedFile = document.getElementById("import-saved-file");
+
+  exportSavedBtn?.addEventListener("click", () => {
+    const saved = getSavedProducts();
+    if (saved.length === 0) {
+      showToast("لا توجد منتجات لتصديرها", "error");
+      return;
+    }
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(saved, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `temu_stock_backup_${new Date().toISOString().slice(0,10)}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+    showToast("تم تصدير نسخة احتياطية بنجاح", "success");
+  });
+
+  importSavedBtn?.addEventListener("click", () => {
+    importSavedFile?.click();
+  });
+
+  importSavedFile?.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      try {
+        const imported = JSON.parse(evt.target.result);
+        if (Array.isArray(imported)) {
+          saveSavedProducts(imported);
+          saveWorkingProducts(imported);
+          showToast("تم استيراد البيانات بنجاح", "success");
+          setTimeout(() => {
+            location.reload();
+          }, 1000);
+        } else {
+          showToast("الملف لا يحتوي على قائمة منتجات صالحة", "error");
+        }
+      } catch {
+        showToast("حدث خطأ أثناء قراءة ملف الاستيراد", "error");
+      }
+    };
+    reader.readAsText(file);
+  });
 
   render();
   return true;
