@@ -48,6 +48,153 @@ function saveWorkingProducts(list) {
   saveList(STORAGE_KEYS.working, list);
 }
 
+// --- دوال مشاركة البيانات وتصدير الروابط ---
+
+function compressProducts(products) {
+  return products.map(p => [
+    p.code || "",
+    p.name || "",
+    p.category || "",
+    p.purchasePrice || 0,
+    p.initialQty || 0,
+    p.sellingPrice || 0,
+    p.qtySold || 0,
+    p.deliveryStatus || "inactive",
+    p.deliveryPrice || 0,
+    p.createdAt || "",
+    p.updatedAt || ""
+  ]);
+}
+
+function decompressProducts(compressed) {
+  return compressed.map(arr => ({
+    code: arr[0],
+    name: arr[1],
+    category: arr[2],
+    purchasePrice: arr[3],
+    initialQty: arr[4],
+    sellingPrice: arr[5],
+    qtySold: arr[6],
+    deliveryStatus: arr[7],
+    deliveryPrice: arr[8],
+    createdAt: arr[9],
+    updatedAt: arr[10]
+  }));
+}
+
+function encodeProductsToUrl(products) {
+  try {
+    const compressed = compressProducts(products);
+    const jsonStr = JSON.stringify(compressed);
+    const utf8Bytes = new TextEncoder().encode(jsonStr);
+    let binary = "";
+    for (let i = 0; i < utf8Bytes.length; i++) {
+      binary += String.fromCharCode(utf8Bytes[i]);
+    }
+    const base64 = btoa(binary);
+    // Make URL-safe Base64
+    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  } catch (e) {
+    console.error("خطأ أثناء ترميز المنتجات للمشاركة:", e);
+    return null;
+  }
+}
+
+function decodeProductsFromUrl(base64Safe) {
+  try {
+    let base64 = base64Safe.replace(/-/g, '+').replace(/_/g, '/');
+    while (base64.length % 4) {
+      base64 += '=';
+    }
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    const jsonStr = new TextDecoder().decode(bytes);
+    const compressed = JSON.parse(jsonStr);
+    if (!Array.isArray(compressed)) return null;
+    return decompressProducts(compressed);
+  } catch (e) {
+    console.error("خطأ أثناء فك ترميز المنتجات المشتركة:", e);
+    return null;
+  }
+}
+
+function mergeProducts(existing, imported) {
+  const merged = [...existing];
+  imported.forEach(impProd => {
+    // Merge by code (SKU) if present, otherwise append
+    if (impProd.code) {
+      const idx = merged.findIndex(p => p.code && p.code.trim() === impProd.code.trim());
+      if (idx > -1) {
+        merged[idx] = impProd;
+      } else {
+        merged.push(impProd);
+      }
+    } else {
+      merged.push(impProd);
+    }
+  });
+  return merged;
+}
+
+// دالة لمعالجة روابط المشاركة في تحميل الصفحة
+function handleShareImport() {
+  const params = new URLSearchParams(window.location.search);
+  let shareData = params.get("share");
+  
+  // أيضاً التحقق من الـ Hash في حال تم إرساله كـ Hash
+  if (!shareData && window.location.hash) {
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    shareData = hashParams.get("share");
+  }
+
+  if (!shareData) return;
+
+  const importedProducts = decodeProductsFromUrl(shareData);
+  if (!importedProducts || importedProducts.length === 0) {
+    showToast("رابط المشاركة غير صالح أو تالف", "error");
+    return;
+  }
+
+  // إظهار نافذة التأكيد للاستيراد
+  const importModal = document.getElementById("share-import-modal");
+  const confirmBtn = document.getElementById("confirm-share-import-btn");
+  const cancelBtn = document.getElementById("cancel-share-import-btn");
+
+  if (!importModal) return;
+
+  importModal.classList.remove("hidden");
+
+  const cleanupUrl = () => {
+    // تنظيف الرابط من كود المشاركة دون إعادة تحميل الصفحة
+    const url = new URL(window.location);
+    url.searchParams.delete("share");
+    window.history.replaceState({}, document.title, url.pathname + url.search);
+  };
+
+  confirmBtn.onclick = () => {
+    const current = getSavedProducts();
+    const merged = mergeProducts(current, importedProducts);
+    saveSavedProducts(merged);
+    saveWorkingProducts(merged);
+    
+    importModal.classList.add("hidden");
+    cleanupUrl();
+    showToast("تم استيراد ودمج المنتجات المشتركة بنجاح", "success");
+    setTimeout(() => {
+      location.reload();
+    }, 1500);
+  };
+
+  cancelBtn.onclick = () => {
+    importModal.classList.add("hidden");
+    cleanupUrl();
+    showToast("تم إلغاء الاستيراد", "error");
+  };
+}
+
 // التحقق مما إذا كانت هناك تغييرات غير محفوظة
 function isModified() {
   const savedStr = localStorage.getItem(STORAGE_KEYS.saved) || "[]";
@@ -644,6 +791,35 @@ function initCalculatorPage() {
     reader.readAsText(file);
   });
 
+  // مشاركة رابط المنتجات عبر الواتساب
+  const shareLinkBtn = document.getElementById("share-link-btn");
+  shareLinkBtn?.addEventListener("click", () => {
+    const saved = getSavedProducts();
+    if (saved.length === 0) {
+      showToast("لا توجد منتجات لمشاركتها", "error");
+      return;
+    }
+    const code = encodeProductsToUrl(saved);
+    if (!code) {
+      showToast("حدث خطأ أثناء إنشاء رابط المشاركة", "error");
+      return;
+    }
+    const shareUrl = `${window.location.origin}${window.location.pathname}?share=${code}`;
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      showToast("تم نسخ رابط المشاركة لمنتجاتك! يمكنك إرساله الآن عبر واتساب", "success");
+    }).catch(() => {
+      const tempInput = document.createElement("input");
+      tempInput.value = shareUrl;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand("copy");
+      document.body.removeChild(tempInput);
+      showToast("تم نسخ رابط المشاركة لمنتجاتك! يمكنك إرساله الآن عبر واتساب", "success");
+    });
+  });
+
   render();
   return true;
 }
@@ -1084,6 +1260,38 @@ function initSavedProductsPage() {
     reader.readAsText(file);
   });
 
+  // مشاركة رابط المنتجات عبر الواتساب لصفحة المحفوظات
+  const shareLinkBtn = document.getElementById("share-link-btn");
+  shareLinkBtn?.addEventListener("click", () => {
+    const saved = getSavedProducts();
+    if (saved.length === 0) {
+      showToast("لا توجد منتجات لمشاركتها", "error");
+      return;
+    }
+    const code = encodeProductsToUrl(saved);
+    if (!code) {
+      showToast("حدث خطأ أثناء إنشاء رابط المشاركة", "error");
+      return;
+    }
+    
+    // توجيه الرابط إلى index.html لضمان التوافقية
+    const homePath = window.location.pathname.replace("products.html", "index.html");
+    const shareUrl = `${window.location.origin}${homePath}?share=${code}`;
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      showToast("تم نسخ رابط المشاركة لمنتجاتك! يمكنك إرساله الآن عبر واتساب", "success");
+    }).catch(() => {
+      const tempInput = document.createElement("input");
+      tempInput.value = shareUrl;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand("copy");
+      document.body.removeChild(tempInput);
+      showToast("تم نسخ رابط المشاركة لمنتجاتك! يمكنك إرساله الآن عبر واتساب", "success");
+    });
+  });
+
   render();
   return true;
 }
@@ -1092,4 +1300,5 @@ function initSavedProductsPage() {
 document.addEventListener("DOMContentLoaded", () => {
   initCalculatorPage();
   initSavedProductsPage();
+  handleShareImport();
 });

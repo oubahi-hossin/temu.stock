@@ -66,6 +66,7 @@
         <button id="export-btn" class="ghost-btn" type="button" style="background: rgba(141,115,74,0.1); color: var(--accent);">📤 تصدير البيانات</button>
         <button id="import-btn" class="ghost-btn" type="button" style="background: rgba(141,115,74,0.1); color: var(--accent);">📥 استيراد البيانات</button>
         <input type="file" id="import-file" accept=".json" style="display: none;" />
+        <button id="share-link-btn" class="primary-btn" type="button" style="background: #25d366; box-shadow: 0 12px 24px rgba(37, 211, 102, 0.25); color: #fff;">🔗 مشاركة الرابط للواتساب</button>
         <a href="products.html" id="nav-saved-products" class="ghost-btn nav-link">📦 صفحة المنتجات المحفوظة</a>
       </div>
 
@@ -212,6 +213,24 @@
         <button type="button" id="unsaved-save-leave-btn" class="primary-btn">💾 حفظ التغييرات والمغادرة</button>
         <button type="button" id="unsaved-leave-btn" class="danger-btn-style" style="border-radius: 999px;">مغادرة دون حفظ</button>
         <button type="button" id="unsaved-cancel-btn" class="ghost-btn">إلغاء والبقاء</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- نافذة استيراد الرابط المشترك -->
+  <div id="share-import-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-content small-modal">
+      <div class="modal-header">
+        <h2>استيراد منتجات مشتركة</h2>
+      </div>
+      <div class="modal-body" style="margin: 16px 0; text-align: right;">
+        <p style="font-weight: bold; font-size: 1.1rem; color: var(--accent-3);">📦 تم الكشف عن رابط يحتوي على منتجات تمت مشاركتها معك.</p>
+        <p>هل تريد دمج واستيراد هذه المنتجات وحفظها على هذا الجهاز؟</p>
+        <p class="warning-text" style="color: var(--accent);">⚠️ ملاحظة: سيتم إضافة المنتجات الجديدة وتحديث المنتجات التي تملك نفس رمز SKU.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="confirm-share-import-btn" class="primary-btn" style="border-radius: 999px;">نعم، استيراد وحفظ</button>
+        <button type="button" id="cancel-share-import-btn" class="ghost-btn">إلغاء</button>
       </div>
     </div>
   </div>
