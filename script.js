@@ -195,6 +195,45 @@ function handleShareImport() {
   };
 }
 
+// دالة لجلب البيانات من ملف products.json على GitHub
+async function fetchProductsFromGithub(showToastNotification = false) {
+  try {
+    const response = await fetch("./products.json?t=" + new Date().getTime());
+    if (!response.ok) {
+      if (showToastNotification) showToast("فشل الاتصال بـ GitHub أو الملف غير موجود", "error");
+      return null;
+    }
+    const data = await response.json();
+    if (Array.isArray(data)) {
+      if (showToastNotification) showToast("تمت المزامنة وجلب البيانات من GitHub بنجاح", "success");
+      return data;
+    } else {
+      if (showToastNotification) showToast("تنسيق ملف المنتجات على GitHub غير صالح", "error");
+      return null;
+    }
+  } catch (error) {
+    console.error("حدث خطأ أثناء جلب البيانات من GitHub:", error);
+    if (showToastNotification) showToast("خطأ في الاتصال بالإنترنت أو جلب البيانات", "error");
+    return null;
+  }
+}
+
+async function syncWithGithub(showToastNotification = true) {
+  const data = await fetchProductsFromGithub(showToastNotification);
+  if (data !== null) {
+    saveSavedProducts(data);
+    saveWorkingProducts(data);
+    if (showToastNotification) {
+      setTimeout(() => {
+        location.reload();
+      }, 1500);
+    } else {
+      return true;
+    }
+  }
+  return false;
+}
+
 // التحقق مما إذا كانت هناك تغييرات غير محفوظة
 function isModified() {
   const savedStr = localStorage.getItem(STORAGE_KEYS.saved) || "[]";
@@ -820,6 +859,12 @@ function initCalculatorPage() {
     });
   });
 
+  // مزامنة البيانات من GitHub
+  const syncBtn = document.getElementById("github-sync-btn");
+  syncBtn?.addEventListener("click", () => {
+    syncWithGithub(true);
+  });
+
   render();
   return true;
 }
@@ -1292,12 +1337,30 @@ function initSavedProductsPage() {
     });
   });
 
+  // مزامنة البيانات من GitHub لصفحة المحفوظات
+  const syncSavedBtn = document.getElementById("github-sync-saved-btn");
+  syncSavedBtn?.addEventListener("click", () => {
+    syncWithGithub(true);
+  });
+
   render();
   return true;
 }
 
 // تشغيل التهيئة عند تحميل المستند
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  // إذا كانت الذاكرة المحلية فارغة تماماً (أول زيارة للموقع)
+  const localSaved = getSavedProducts();
+  if (localSaved.length === 0) {
+    const data = await fetchProductsFromGithub(false);
+    if (data && data.length > 0) {
+      saveSavedProducts(data);
+      saveWorkingProducts(data);
+      location.reload();
+      return;
+    }
+  }
+
   initCalculatorPage();
   initSavedProductsPage();
   handleShareImport();
